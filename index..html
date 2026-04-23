@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Экзамен ПДД — Тёмная тема | Архитектура ПО (адаптив iPhone)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #0a0f1c;
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            padding: 16px 12px 30px 12px;
+            color: #eef2ff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .exam-card {
+            background: #111827;
+            border-radius: 20px;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            border: 1px solid #2d3a4e;
+        }
+
+        /* шапка — адаптив */
+        .header {
+            background: #0b1120;
+            padding: 16px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #2d3a4e;
+        }
+
+        .title h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #FDE68A, #F59E0B);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .title p {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .stats {
+            background: #1e2a3e;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            display: flex;
+            gap: 12px;
+            font-size: 0.75rem;
+        }
+
+        .stats span {
+            background: #f4c542;
+            color: #1e2a3a;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 6px;
+        }
+
+        .config-popup {
+            position: relative;
+        }
+        .config-toggle {
+            background: #1e293b;
+            border: 1px solid #3b4a62;
+            color: #f4c542;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+        .config-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 16px;
+            width: 260px;
+            z-index: 200;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            backdrop-filter: blur(4px);
+        }
+        .config-dropdown.open {
+            display: flex;
+        }
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .config-item label {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        .config-item input {
+            background: #0f172a;
+            border: 1px solid #4b5563;
+            color: #facc15;
+            padding: 8px 10px;
+            border-radius: 12px;
+            width: 80px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .apply-config {
+            background: #f4c542;
+            color: #0f172a;
+            border: none;
+            padding: 10px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        .progress-area {
+            padding: 12px 20px 8px 20px;
+            background: #0f172a;
+            border-bottom: 1px solid #2d3a4e;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .bar-bg {
+            background: #2d3a4e;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            background: #f4c542;
+            width: 0%;
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.2s ease;
+        }
+
+        /* Навигация прямоугольниками — горизонтальный скролл для iPhone */
+        .question-nav {
+            background: #0f172a;
+            padding: 12px 16px;
+            border-bottom: 1px solid #2d3a4e;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            display: flex;
+            gap: 8px;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+        .question-nav::-webkit-scrollbar {
+            height: 3px;
+        }
+        .nav-rect {
+            display: inline-flex;
+            min-width: 40px;
+            height: 40px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.1s;
+            flex-shrink: 0;
+        }
+        .nav-rect.active-rect {
+            background: #f4c542;
+            border-color: #facc15;
+            box-shadow: 0 0 0 2px rgba(244,197,66,0.4);
+        }
+        .nav-rect.answered-status {
+            border-left: 4px solid #4ade80;
+            border-bottom: 2px solid #4ade80;
+        }
+
+        .question-area {
+            padding: 20px 16px 20px 16px;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            line-height: 1.35;
+            margin-bottom: 24px;
+            background: #111c2e;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border-left: 5px solid #f4c542;
+            word-break: break-word;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .option-item {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.12s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #f1f5f9;
+        }
+
+        .option-item:hover:not(.disabled-opt) {
+            background: #2d3a4e;
+            border-color: #f4c542;
+        }
+
+        .prefix {
+            font-weight: 800;
+            background: #2d3a4e;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            color: #facc15;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .option-text {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .option-item.correct-highlight {
+            background: #14532d;
+            border-color: #4ade80;
+            pointer-events: none;
+        }
+
+        .option-item.wrong-highlight {
+            background: #7f1a1a;
+            border-color: #f87171;
+            pointer-events: none;
+        }
+
+        .disabled-opt {
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        .feedback {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin: 12px 0 18px;
+            font-size: 0.9rem;
+            border-left: 4px solid #f4c542;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .next-btn, .reset-exam-btn {
+            background: #f4c542;
+            color: #0f172a;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 12px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+
+        .reset-exam-btn {
+            background: #334155;
+            color: #f1f5f9;
+        }
+        .reset-exam-btn:active, .next-btn:active {
+            transform: scale(0.97);
+        }
+
+        .result-panel {
+            background: #0f172a;
+            padding: 20px 18px;
+            border-radius: 24px;
+            text-align: center;
+            margin: 20px 16px 30px;
+            border: 1px solid #f4c542;
+        }
+
+        .finish-stats {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.65rem;
+            color: #6c757d;
+        }
+
+        /* iPhone 12/14 специальные фиксы */
+        @media (max-width: 480px) {
+            body {
+                padding: 12px 10px 24px 10px;
+            }
+            .header {
+                padding: 12px 16px;
+            }
+            .title h1 {
+                font-size: 1.2rem;
+            }
+            .stats {
+                padding: 4px 10px;
+                gap: 8px;
+            }
+            .stats span {
+                font-size: 0.7rem;
+            }
+            .question-text {
+                font-size: 1rem;
+                padding: 14px 16px;
+            }
+            .option-item {
+                padding: 10px 14px;
+                gap: 10px;
+            }
+            .prefix {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+            .nav-rect {
+                min-width: 34px;
+                height: 34px;
+            }
+            .action-buttons {
+                gap: 10px;
+            }
+            .next-btn, .reset-exam-btn {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Средние экраны (iPhone 12/14 в портрете) */
+        @media (min-width: 375px) and (max-width: 430px) {
+            .question-text {
+                font-size: 1.05rem;
+            }
+            .nav-rect {
+                min-width: 36px;
+                height: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="exam-card">
+        <div class="header">
+            <div class="title">
+                <h1>🔷 Архитектура ПО</h1>
+                <p>Теория + практика • Рандом</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="stats">
+                    <div>📖 <span id="theory-count">0</span></div>
+                    <div>⚙️ <span id="practice-count">0</span></div>
+                </div>
+                <div class="config-popup">
+                    <button id="configToggleBtn" class="config-toggle">⚙️</button>
+                    <div id="configDropdown" class="config-dropdown">
+                        <div class="config-item"><label>📘 Теория (5-49):</label><input type="number" id="theory-limit" min="5" max="49" value="20" step="1"></div>
+                        <div class="config-item"><label>🛠️ Практика (5-32):</label><input type="number" id="practice-limit" min="5" max="32" value="12" step="1"></div>
+                        <button id="applyConfigBtn" class="apply-config">🎲 Применить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="progress-area">
+            <div class="progress-text">
+                <span>📋 Вопрос <span id="current-num">1</span> / <span id="total-questions">32</span></span>
+                <span>✅ <span id="correct-counter">0</span></span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" id="progress-fill"></div></div>
+        </div>
+
+        <div id="nav-buttons-container" class="question-nav"></div>
+
+        <div id="dynamic-content">
+            <div class="question-area">
+                <div class="question-text" id="question-text">Загрузка...</div>
+                <div class="options-list" id="options-container"></div>
+                <div id="feedback-area" class="feedback" style="display: none;"></div>
+                <div class="action-buttons">
+                    <button id="resetButton" class="reset-exam-btn">🔄 Сброс</button>
+                    <button id="nextButton" class="next-btn">➡️ Дальше</button>
+                </div>
+            </div>
+        </div>
+        <div id="final-results" style="display: none;"></div>
+    </div>
+    <footer>⚡ Прямоугольники — навигация. Зелёная рамка = отвечен. ⚙️ меняет кол-во вопросов.</footer>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // ТЕОРИЯ 49 (полная)
+    // --------------------------------------------------------------
+    const theoryBank = [
+        { text: "1. В чём основное архитектурное назначение шаблона MVC в серверных приложениях с долгим жизненным циклом проекта", options: ["A) разделение пользовательского интерфейса, бизнес-логики и слоя доступа к данным", "B) уменьшение количества классов в проекте", "C) ускорение выполнения программы", "D) объединение базы данных и интерфейса в одном компоненте"], correct: 0 },
+        { text: "2. Верно или неверно: представление в архитектуре MVC может содержать бизнес-логику, если это ускоряет разработку на раннем этапе проекта", options: ["A) верно", "B) неверно"], correct: 1 },
+        { text: "3. В системе интернет-магазина разработчик разместил проверку доступности товара внутри HTML-шаблона. Какое архитектурное последствие наиболее вероятно", options: ["A) нарушение принципа разделения ответственности компонентов", "B) ускорение загрузки страницы", "C) уменьшение числа запросов к базе данных", "D) упрощение структуры маршрутов"], correct: 0 },
+        { text: "4. В каком случае использование шаблона Singleton действительно оправдано в серверной архитектуре", options: ["A) управление единым экземпляром конфигурации приложения", "B) создание большого количества временных объектов", "C) хранение пользовательских данных", "D) реализация бизнес-логики обработки заказов"], correct: 0 },
+        { text: "5. Верно или неверно: чрезмерное использование Singleton упрощает тестирование системы благодаря централизованному доступу к объектам", options: ["A) верно", "B) неверно"], correct: 1 },
+        { text: "6. В проекте требуется заменить СУБД без изменения бизнес-логики приложения. Какой архитектурный подход должен быть реализован заранее", options: ["A) использование слоя Repository для абстрагирования доступа к данным", "B) использование глобальных переменных", "C) перенос логики в шаблоны представления", "D) отказ от моделей данных"], correct: 0 },
+        { text: "7. В чём назначение слоя Service Layer в архитектуре серверного приложения", options: ["A) выделение бизнес-логики в отдельный уровень между представлениями и моделями", "B) описание структуры таблиц базы данных", "C) генерация HTML-разметки", "D) управление маршрутизацией приложения"], correct: 0 },
+        { text: "8. Почему использование шаблонов проектирования особенно важно в распределённых информационных системах", options: ["A) упрощает масштабирование архитектуры и повторное использование решений", "B) уменьшает количество серверов", "C) уменьшает количество таблиц базы данных", "D) уменьшает количество пользователей"], correct: 0 },
+        { text: "9. В банковской системе требуется строгая согласованность транзакций и контроль целостности данных. Какой тип базы данных предпочтителен", options: ["A) SQL-база данных", "B) NoSQL-база данных", "C) файловая система", "D) кэш Redis"], correct: 0 },
+        { text: "10. В системе аналитики пользовательских действий структура данных заранее неизвестна и часто изменяется. Какое решение наиболее рационально", options: ["A) использование NoSQL-базы данных", "B) использование строго нормализованной SQL-базы", "C) использование только CSV-файлов", "D) хранение данных в оперативной памяти"], correct: 0 },
+        { text: "11. Верно или неверно: NoSQL-базы данных полностью заменяют SQL-базы данных в современных информационных системах", options: ["A) верно", "B) неверно"], correct: 1 },
+        { text: "12. В проекте несколько разработчиков одновременно реализуют разные функции системы. Какой подход организации Git-репозитория является наиболее корректным", options: ["A) использование отдельных веток разработки", "B) изменение только основной ветки проекта", "C) удаление истории изменений", "D) объединение всех изменений в одном файле"], correct: 0 },
+        { text: "13. Разработчики изменили один и тот же метод обработки заказа в разных ветках. Что произойдёт при объединении веток", options: ["A) возникнет конфликт слияния", "B) изменения автоматически объединятся без проверки", "C) удалится история изменений", "D) удалится одна из веток"], correct: 0 },
+        { text: "14. Почему фиксация изменений небольшими логическими коммитами считается хорошей инженерной практикой", options: ["A) упрощает поиск ошибок и анализ истории изменений", "B) уменьшает количество таблиц базы данных", "C) уменьшает количество маршрутов", "D) уменьшает количество моделей"], correct: 0 },
+        { text: "15. Верно или неверно: ORM полностью устраняет необходимость понимания SQL при разработке серверных приложений", options: ["A) верно", "B) неверно"], correct: 1 },
+        { text: "16. В каком случае оправдан переход от ORM к прямым SQL-запросам", options: ["A) требуется оптимизация сложного аналитического запроса", "B) используется административная панель", "C) используется маршрутизация", "D) используется сериализация данных"], correct: 0 },
+        { text: "17. В проекте бизнес-логика размещена непосредственно в models.py. Какое архитектурное последствие наиболее вероятно", options: ["A) ухудшение разделения доменной логики и механизма хранения данных", "B) уменьшение количества таблиц", "C) ускорение выполнения запросов", "D) уменьшение количества маршрутов"], correct: 0 },
+        { text: "18. В обработчике views.py реализованы проверки данных, обращения к базе и отправка уведомлений. Какое решение улучшит архитектуру системы", options: ["A) выделение отдельного слоя бизнес-логики", "B) объединение всех обработчиков в один файл", "C) перенос маршрутов в models.py", "D) удаление проверки данных"], correct: 0 },
+        { text: "19. Что представляет собой микросервис в архитектуре распределённой системы", options: ["A) независимое приложение, реализующее отдельную бизнес-функцию", "B) отдельная HTML-страница", "C) отдельный класс модели", "D) отдельный SQL-запрос"], correct: 0 },
+        { text: "20. В каком случае микросервисная архитектура оправдана больше монолитной", options: ["A) требуется независимое масштабирование отдельных компонентов системы", "B) создаётся небольшой учебный проект", "C) отсутствует серверная логика", "D) используется только один пользователь"], correct: 0 },
+        { text: "21. Почему в микросервисной архитектуре рекомендуется использовать отдельную базу данных для каждого сервиса", options: ["A) уменьшает связанность между сервисами", "B) уменьшает количество таблиц", "C) ускоряет интерфейс пользователя", "D) уменьшает количество маршрутов"], correct: 0 },
+        { text: "23. Верно или неверно: микросервисы всегда взаимодействуют только через синхронные HTTP-запросы", options: ["A) верно", "B) неверно"], correct: 1 },
+        { text: "24. Почему централизованное описание маршрутов в urls.py улучшает сопровождаемость Django-проекта", options: ["A) позволяет изменять структуру URL независимо от логики представлений", "B) уменьшает количество моделей", "C) ускоряет выполнение SQL-запросов", "D) уменьшает количество таблиц"], correct: 0 },
+        { text: "25. В проекте требуется реализовать несколько обработчиков с общей логикой проверки прав доступа. Какой архитектурный подход предпочтителен", options: ["A) использование базового класса CBV", "B) копирование кода в каждом обработчике", "C) перенос логики в шаблоны", "D) удаление проверки прав доступа"], correct: 0 },
+        { text: "26. В каком случае предпочтительно использовать функциональные представления вместо классовых", options: ["A) когда требуется построить иерархию представлений с общими mixin и повторным использованием поведения", "B) когда нужно реализовать простую локальную логику без наследования и общего базового поведения", "C) когда необходимо централизованно описать маршрутизацию приложения через класс", "D) когда требуется разделить один endpoint на несколько микросервисов"], correct: 1 },
+        { text: "27. Почему разделение клиента и сервера через HTTP позволяет независимо развивать систему", options: ["A) потому что сервер перестаёт зависеть от структуры базы данных", "B) потому что HTTP автоматически уменьшает связанность моделей данных", "C) потому что взаимодействие строится на стандартизированном протоколе обмена сообщениями", "D) потому что клиент может напрямую управлять внутренней логикой сервера"], correct: 2 },
+        { text: "28. Разработчик использует PUT для частичного обновления ресурса. Какое архитектурное последствие наиболее вероятно", options: ["A) снижается объём передаваемых данных по сравнению с PATCH", "B) нарушается семантика HTTP-методов и предсказуемость интерфейса", "C) автоматически появляется поддержка идемпотентности на уровне бизнес-логики", "D) клиент перестаёт зависеть от структуры JSON-ответа"], correct: 1 },
+        { text: "29. Какой HTTP-метод обычно используется для частичного обновления ресурса", options: ["A) OPTIONS", "B) PATCH", "C) GET", "D) TRACE"], correct: 1 },
+        { text: "30. Какой HTTP-метод используется для определения допустимых операций ресурса и поддерживаемых способов взаимодействия с ним", options: ["A) HEAD", "B) PUT", "C) OPTIONS", "D) CONNECT"], correct: 2 },
+        { text: "31. Сервер вернул код ответа HTTP 201. Какой вывод о результате операции является наиболее корректным", options: ["A) запрос был обработан без передачи тела ответа", "B) успешно создан новый ресурс", "C) сервер подтвердил удаление существующего ресурса", "D) клиенту отказано в доступе, но соединение сохранено"], correct: 1 },
+        { text: "32. Почему отказ от хранения состояния клиента на сервере считается одним из ключевых принципов REST", options: ["A) потому что это позволяет любому серверу обработать запрос независимо от предыдущих обращений клиента", "B) потому что это полностью исключает необходимость аутентификации и токенов", "C) потому что сервер перестаёт зависеть от схемы базы данных", "D) потому что все ответы автоматически становятся кэшируемыми"], correct: 0 },
+        { text: "33. Верно или неверно: хранение пользовательской сессии между запросами на стороне сервера соответствует принципу stateless в REST-архитектуре", options: ["A) верно, если запросы выполняются только через HTTPS", "B) верно, если клиент использует JSON", "C) неверно", "D) неверно, но только для микросервисов"], correct: 2 },
+        { text: "34. Почему использование кэширования может повышать производительность REST-систем", options: ["A) потому что клиент и промежуточные узлы могут повторно использовать ранее полученные ответы без повторной обработки запроса сервером", "B) потому что кэширование устраняет необходимость в маршрутизации запросов", "C) потому что сервер перестаёт формировать JSON-структуры", "D) потому что все операции изменения ресурсов становятся асинхронными"], correct: 0 },
+        { text: "35. В чём заключается назначение многоуровневой архитектуры взаимодействия в REST", options: ["A) в том, чтобы клиент напрямую обращался к каждой внутренней базе данных системы", "B) в том, чтобы скрыть внутреннюю структуру серверной системы от клиента через промежуточные уровни обработки", "C) в том, чтобы заменить HTTP-запросы прямыми вызовами методов между сервисами", "D) в том, чтобы клиент самостоятельно выбирал, какой внутренний сервис будет выполнять бизнес-логику"], correct: 1 },
+        { text: "36. Почему асинхронная обработка повышает эффективность серверного приложения при взаимодействии с внешними сервисами", options: ["A) позволяет автоматически выполнять транзакции базы данных без блокировок", "B) уменьшает объём передаваемых по сети данных", "C) позволяет продолжать выполнение других задач во время ожидания ответа внешнего сервиса", "D) устраняет необходимость обработки ошибок при сетевых запросах"], correct: 2 },
+        { text: "37. В распределённой системе сервис уведомлений вызывается напрямую через HTTP. Какое решение уменьшит зависимость", options: ["A) перенос вызова уведомлений в очередь сообщений", "B) объединение сервисов в один монолит", "C) перенос логики уведомлений в models.py", "D) использование GET-запроса"], correct: 0 },
+        { text: "38. Бизнес-логика напрямую обращается к ORM без промежуточного слоя. Последствие?", options: ["A) увеличение связанности компонентов и усложнение тестирования", "B) автоматическое ускорение запросов", "C) уменьшение количества таблиц", "D) упрощение маршрутизации"], correct: 0 },
+        { text: "39. Почему использование фреймворка снижает вероятность архитектурных ошибок", options: ["A) задаёт стандартную структуру проекта", "B) уменьшает количество моделей", "C) уменьшает количество таблиц", "D) уменьшает количество маршрутов"], correct: 0 },
+        { text: "40. Несколько клиентов (web, mobile) используют один backend. Какое решение сохранит стабильность интерфейса", options: ["A) отказ от сериализации", "B) увеличение контроллеров", "C) перенос логики в маршруты", "D) введение версионирования API"], correct: 3 },
+        { text: "41. Почему изменение структуры JSON без изменения версии API опасно", options: ["A) нарушается обратная совместимость", "B) увеличиваются маршруты", "C) уменьшается производительность БД", "D) необходимость асинхронности"], correct: 0 },
+        { text: "42. Верно или неверно: сервер может возвращать разные структуры JSON для одного ресурса без изменения версии API без последствий", options: ["A) верно", "B) неверно"], correct: 1 },
+        { text: "43. Почему в REST предпочтительно передавать идентификаторы связанных объектов вместо вложенных структур", options: ["A) автоматическая синхронизация", "B) уменьшает связанность и объём данных", "C) вложенные структуры запрещены", "D) устраняет сериализацию"], correct: 1 },
+        { text: "44. Изменена структура JSON без версионирования. Последствие?", options: ["A) автоматическое обновление клиентов", "B) увеличение производительности", "C) нарушение обратной совместимости и ошибки клиентов", "D) уменьшение нагрузки"], correct: 2 },
+        { text: "45. Почему предварительное проектирование UI влияет на backend архитектуру", options: ["A) структура интерфейса определяет сценарии, API и модель данных", "B) интерфейс автоматически задаёт таблицы", "C) макеты исключают бизнес-логику", "D) UI определяет маршрутизацию"], correct: 0 },
+        { text: "46. В проекте CSR (React/Vue frontend + API). Последствие для публичного веб-сайта?", options: ["A) ухудшается индексируемость без доп. серверной генерации", "B) ускорение SQL", "C) уменьшение сетевых запросов", "D) невозможность REST"], correct: 0 },
+        { text: "47. Когда SSR может ухудшить производительность", options: ["A) когда большая часть интерфейса активно обновляется без перезагрузки", "B) когда нужна поисковая индексация", "C) маршрутизация на клиенте", "D) возврат JSON"], correct: 0 },
+        { text: "48. Верно или неверно: CSR уменьшает нагрузку на сервер за счёт переноса логики на клиент", options: ["A) верно", "B) неверно"], correct: 0 },
+        { text: "49. В крупной админке требуется фильтрация, динамика без перезагрузки. Какой подход?", options: ["A) клиентская генерация интерфейса с API", "B) только серверные шаблоны", "C) вся бизнес-логика в браузер без backend", "D) только SQL без REST"], correct: 0 }
+    ];
+
+    // практика (32 вопроса, полные правильные тексты)
+    const practiceBank = [
+        { text: "1. В проекте интернет-магазина реализован расчёт суммы заказов пользователя. Дан исходный код:\n\norders = Order.objects.all()\nresult = []\nfor order in orders:\n    total = sum(item.price for item in order.items.all())\n    result.append({\"id\": order.id, \"total\": total})\n\nКакую проблему может вызвать такая реализация при росте количества заказов?", options: ["A) нарушение сериализации JSON", "B) возникновение проблемы N+1 запросов", "C) ошибка маршрутизации", "D) нарушение структуры модели"], correct: 1 },
+        { text: "2. В Django-приложении реализован вывод email владельцев заказов. Дан исходный код:\n\norders = Order.objects.all()\nfor order in orders:\n    print(order.user.email)\n\nКакое изменение повысит производительность выполнения этого кода?", options: ["A) использование Singleton", "B) перенос логики в urls.py", "C) использование select_related(\"user\")", "D) удаление ORM"], correct: 2 },
+        { text: "3. В API реализован endpoint создания пользователя. Дан исходный код:\n\n@app.get(\"/create-user\")\ndef create_user(username: str):\n    service.create_user(username)\n\nКакую архитектурную проблему содержит данный endpoint?", options: ["A) создание ресурса через GET-запрос", "B) отсутствие сериализации ответа", "C) отсутствие схемы данных", "D) отсутствие базы данных"], correct: 0 },
+        { text: "4. В обработчике регистрации пользователя реализована следующая логика. Дан исходный код:\n\ndef register(request):\n    user = User.objects.create(username=request.POST[\"username\"])\n    send_email(user.username)\n    log_event(\"register\")\n\nКакое изменение улучшит тестируемость бизнес-логики?", options: ["A) перенос логики в urls.py", "B) перенос логики регистрации в сервисный слой", "C) удаление модели User", "D) отказ от POST-запросов"], correct: 1 },
+        { text: "5. В системе используется следующий SQL-запрос получения событий. Дан исходный код:\n\nSELECT * FROM logs ORDER BY created_at DESC;\n\nКакую проблему может вызвать такой запрос при работе с большой таблицей?", options: ["A) невозможность сортировки", "B) перегрузку памяти из-за отсутствия ограничения выборки", "C) нарушение структуры таблицы", "D) невозможность выполнения SELECT"], correct: 1 },
+        { text: "6. В API списка товаров используется следующий SQL-запрос. Дан исходный код:\n\nSELECT * FROM products ORDER BY created_at DESC;\n\nКакое изменение повысит масштабируемость endpoint?", options: ["A) удаление ORDER BY", "B) добавление LIMIT и OFFSET", "C) перенос запроса в Python", "D) использование CSV"], correct: 1 },
+        { text: "7. В приложении реализован просмотр профиля пользователя. Дан исходный код:\n\ndef profile(request):\n    user_id = request.GET.get(\"id\")\n    user = User.objects.get(id=user_id)\n    return JsonResponse({\"email\": user.email})\n\nКакую проблему безопасности содержит данный код?", options: ["A) использование JsonResponse", "B) использование GET-запроса", "C) отсутствие проверки прав доступа", "D) передача email клиенту"], correct: 2 },
+        { text: "8. В FastAPI реализован endpoint создания заказа. Дан исходный код:\n\n@app.post(\"/orders\")\ndef create_order(order: dict):\n    return order_service.create(order)\n\nКакое архитектурное улучшение следует внести?", options: ["A) заменить dict на Pydantic-схему", "B) заменить POST на GET", "C) удалить order_service", "D) отказаться от JSON"], correct: 0 },
+        { text: "9. В модели счета используется вычисляемое поле total. Дан исходный код:\n\nclass Invoice(models.Model):\n    price = models.DecimalField(max_digits=10, decimal_places=2)\n    quantity = models.IntegerField()\n    total = models.DecimalField(max_digits=10, decimal_places=2)\n\nКакой риск возникает при хранении total в базе данных?", options: ["A) невозможность использования DecimalField", "B) невозможность хранения quantity", "C) рассинхронизация вычисляемого значения", "D) невозможность сериализации модели"], correct: 2 },
+        { text: "11. В сервисе оплаты реализован следующий endpoint. Дан исходный код:\n\n@app.post(\"/pay\")\ndef pay(order_id: int):\n    process_payment(order_id)\n    send_email(order_id)\n    update_inventory(order_id)\n\nКакую архитектурную проблему может вызвать такая реализация?", options: ["A) невозможность отправки email", "B) отсутствие транзакционной границы операций", "C) невозможность обновления склада", "D) отсутствие сериализации ответа"], correct: 1 },
+        { text: "12. В системе заказов реализовано изменение статуса заказа. Дан исходный код:\n\norder.status = \"paid\"\norder.save()\nsend_email(order.user.email)\n\nКакое архитектурное решение уменьшит риск противоречивых данных?", options: ["A) перенос send_email в шаблон", "B) удаление поля status", "C) использование транзакции или очереди сообщений", "D) использование GET-запроса"], correct: 2 },
+        { text: "13. В системе реализован endpoint получения списка пользователей:\n\nGET /users\nEndpoint возвращает миллионы записей. Какое решение необходимо применить?", options: ["A) внедрение пагинации", "B) удаление endpoint", "C) использование XML", "D) перенос логики в SQL-файл"], correct: 0 },
+        { text: "14. Один endpoint используется web и mobile клиентами:\n\nGET /profile\nКлиенты требуют разные структуры ответа. Какое архитектурное решение корректно применить?", options: ["A) удаление лишних полей модели", "B) перенос логики в HTML", "C) введение версионирования API", "D) создание новой базы данных"], correct: 2 },
+        { text: "15. В микросервисной архитектуре один сервис обращается к другому через синхронный HTTP-запрос. Дан исходный код:\n\nresponse = requests.get(\"http://user-service/profile/1\")\nПри увеличении количества сервисов в системе такие вызовы начинают образовывать цепочки зависимостей между сервисами. Какой архитектурный риск возникает при отказе одного из сервисов в такой цепочке?", options: ["A) невозможность передачи JSON", "B) каскадные отказы сервисов", "C) запрет HTTP", "D) запрет requests"], correct: 1 },
+        { text: "16. В распределённой системе заказ обрабатывается следующим образом:\n\ncreate_order()\nreserve_items()\ncharge_payment()\n\nКакой архитектурный подход обеспечивает согласованность операций?", options: ["A) saga-паттерн", "B) Singleton", "C) ORM", "D) PATCH"], correct: 0 },
+        { text: "17. В Django-приложении реализовано создание заказа через POST-запрос. Дан исходный код:\n\ndef create_order(request):\n    Order.objects.create(user=request.user)\n\nКакая архитектурная проблема может возникнуть при расширении бизнес-логики создания заказа?", options: ["A) отсутствие слоя валидации и бизнес-логики между представлением и моделью", "B) невозможность использования ORM", "C) невозможность обработки POST-запросов", "D) невозможность сериализации данных"], correct: 0 },
+        { text: "18. В API используется следующий SQL-запрос:\n\nSELECT * FROM orders WHERE user_id = 10;\n\nКакое изменение повысит производительность?", options: ["A) перенос запроса в HTML", "B) удаление WHERE", "C) использование CSV", "D) добавление индекса по user_id"], correct: 3 },
+        { text: "19. После создания заказа отправляется уведомление:\n\nrequests.post(\"http://notification/send\")\n\nКакое архитектурное решение повысит устойчивость системы?", options: ["A) удаление уведомлений", "B) перенос вызова в ORM", "C) использование очереди сообщений", "D) использование GET"], correct: 2 },
+        { text: "20. В API изменена структура ответа сервера:\n\nбыло: {\"id\":10,\"name\":\"Laptop\"}\nстало: {\"id\":10,\"title\":\"Laptop\"}\n\nКакое решение позволит избежать ошибок у клиентов?", options: ["A) замена JSON на XML", "B) введение версии API", "C) перенос поля в URL", "D) удаление старого поля"], correct: 1 },
+        { text: "21. В системе реализован endpoint списка товаров. Дан исходный код:\n\nproducts = Product.objects.all()\nreturn JsonResponse(list(products.values()), safe=False)\n\nКакую проблему может вызвать такая реализация при росте объёма данных?", options: ["A) отсутствие пагинации", "B) запрет использования JsonResponse", "C) запрет ORM", "D) запрет values()"], correct: 0 },
+        { text: "22. В системе используется последовательный вызов сервисов:\n\ninventory = requests.get(\"http://inventory/items\")\nprices = requests.get(\"http://pricing/items\")\n\nКакой архитектурный риск возникает?", options: ["A) запрет HTTP", "B) синхронная зависимость между сервисами", "C) невозможность передачи JSON", "D) запрет requests"], correct: 1 },
+        { text: "23. В обработчике используется следующий код:\n\nuser = User.objects.get(username=username)\n\nКакую проблему необходимо учитывать?", options: ["A) запрет ORM", "B) запрет метода get", "C) возможное исключение DoesNotExist", "D) невозможность использования username"], correct: 2 },
+        { text: "24. В Django-приложении реализовано несколько обработчиков, в которых повторяется одинаковая логика проверки прав доступа пользователя. Дан пример одного из обработчиков:\n\ndef order_list(request):\n    if not request.user.is_authenticated:\n        return redirect(\"login\")\n    orders = Order.objects.all()\n    return render(request, \"orders.html\", {\"orders\": orders})\n\nКакое архитектурное решение позволит уменьшить дублирование кода при реализации подобных обработчиков?", options: ["A) перенос логики проверки прав доступа в models.py", "B) использование классовых представлений (CBV) с наследованием общего поведения", "C) удаление проверки прав доступа", "D) перенос маршрутов в views.py для дальнейшей реализации SAGA-паттерна разработки"], correct: 1 },
+        { text: "25. В системе используется вычисление суммы заказа. Дан исходный код:\n\norder.total = order.price * order.quantity\norder.save()\n\nКакой риск возникает?", options: ["A) запрет метода save", "B) запрет хранения quantity", "C) рассинхронизация вычисляемого значения", "D) запрет хранения price"], correct: 2 },
+        { text: "26. В системе используется следующий вызов сервиса уведомлений:\n\nrequests.get(\"http://notification/send\")\n\nКакую проблему может вызвать отсутствие обработки ошибок?", options: ["A) остановку бизнес-процесса при недоступности сервиса", "B) запрет requests", "C) запрет HTTP", "D) невозможность передачи JSON"], correct: 0 },
+        { text: "27. В API используется следующий SQL-запрос:\n\nSELECT * FROM events ORDER BY created_at DESC;\n\nКакое изменение повысит масштабируемость endpoint?", options: ["A) удаление ORDER BY", "B) перенос запроса в Python", "C) добавление LIMIT", "D) замена SELECT"], correct: 2 },
+        { text: "28. В системе реализовано удаление пользователя. Дан исходный код:\n\nUser.objects.filter(id=user_id).delete()\n\nКакую проблему безопасности необходимо учитывать?", options: ["A) запрет метода delete", "B) запрет метода filter", "C) отсутствие проверки прав доступа", "D) запрет передачи id"], correct: 2 },
+        { text: "29. В Django-приложении разработчик зарегистрировал модель в административной панели следующим образом. Дан исходный код:\n\nfrom django.contrib import admin\nfrom .models import Order\nadmin.site.register(Order)\nПосле этого доступ к административной панели был предоставлен большому количеству сотрудников компании. Какой архитектурный риск возникает при такой конфигурации административного интерфейса?", options: ["A) возможность неконтролируемого изменения данных через административную панель", "B) невозможность редактирования объектов модели", "C) автоматическое удаление таблиц базы данных", "D) невозможность отображения моделей в интерфейсе администратора"], correct: 0 },
+        { text: "30. В системе реализован endpoint удаления заказа. Дан исходный код:\n\n@app.get(\"/orders/delete/{id}\")\ndef delete_order(id:int):\n    service.delete(id)\n\nКакое нарушение архитектуры REST присутствует?", options: ["A) запрет id", "B) удаление ресурса через GET", "C) запрет метода delete", "D) запрет GET"], correct: 1 },
+        { text: "31. В API используется следующий SQL-запрос:\n\nSELECT * FROM orders;\n\nКакую проблему масштабируемости необходимо учитывать?", options: ["A) запрет SELECT", "B) отсутствие пагинации", "C) запрет таблиц", "D) запрет orders"], correct: 1 },
+        { text: "32. В системе используется endpoint получения заказов:\n\nGET /orders\nРазные клиенты требуют разные наборы полей ресурса. Какое архитектурное решение является наиболее корректным?", options: ["A) создание новой базы данных", "B) удаление лишних полей модели", "C) введение versioning или projection параметров API", "D) перенос логики в HTML"], correct: 2 }
+    ];
+
+    function getRandomItems(arr, count) {
+        const shuffled = [...arr];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled.slice(0, count);
+    }
+
+    let currentQuestions = [];
+    let userAnswers = [];
+    let currentIndex = 0;
+    let correctCount = 0;
+    let answerLock = false;
+
+    // DOM
+    const theoryCountSpan = document.getElementById('theory-count');
+    const practiceCountSpan = document.getElementById('practice-count');
+    const currentNumSpan = document.getElementById('current-num');
+    const totalSpan = document.getElementById('total-questions');
+    const correctCounterSpan = document.getElementById('correct-counter');
+    const progressFill = document.getElementById('progress-fill');
+    const questionTextDiv = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackDiv = document.getElementById('feedback-area');
+    const nextBtn = document.getElementById('nextButton');
+    const resetBtn = document.getElementById('resetButton');
+    const finalResultsDiv = document.getElementById('final-results');
+    const dynamicContent = document.getElementById('dynamic-content');
+    const navContainer = document.getElementById('nav-buttons-container');
+    const theoryLimitInput = document.getElementById('theory-limit');
+    const practiceLimitInput = document.getElementById('practice-limit');
+    const applyConfigBtn = document.getElementById('applyConfigBtn');
+    const configToggleBtn = document.getElementById('configToggleBtn');
+    const configDropdown = document.getElementById('configDropdown');
+
+    configToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        configDropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+        if (!configToggleBtn.contains(e.target) && !configDropdown.contains(e.target)) configDropdown.classList.remove('open');
+    });
+
+    function rebuildExam() {
+        let tCount = parseInt(theoryLimitInput.value);
+        let pCount = parseInt(practiceLimitInput.value);
+        if (isNaN(tCount)) tCount = 20;
+        if (isNaN(pCount)) pCount = 12;
+        tCount = Math.min(49, Math.max(5, tCount));
+        pCount = Math.min(32, Math.max(5, pCount));
+        const theorySample = getRandomItems(theoryBank, tCount);
+        const practiceSample = getRandomItems(practiceBank, pCount);
+        currentQuestions = [...theorySample, ...practiceSample];
+        userAnswers = new Array(currentQuestions.length).fill(null);
+        currentIndex = 0;
+        correctCount = 0;
+        answerLock = false;
+        theoryCountSpan.innerText = tCount;
+        practiceCountSpan.innerText = pCount;
+        totalSpan.innerText = currentQuestions.length;
+        finalResultsDiv.style.display = 'none';
+        dynamicContent.style.display = 'block';
+        renderNavigation();
+        renderCurrentQuestion();
+    }
+
+    function renderNavigation() {
+        navContainer.innerHTML = '';
+        for (let i = 0; i < currentQuestions.length; i++) {
+            const rect = document.createElement('div');
+            rect.classList.add('nav-rect');
+            if (userAnswers[i] !== null) rect.classList.add('answered-status');
+            if (i === currentIndex) rect.classList.add('active-rect');
+            rect.addEventListener('click', (function(idx) { return function() {
+                if (currentIndex !== idx) {
+                    currentIndex = idx;
+                    renderCurrentQuestion();
+                    renderNavigation();
+                }
+            }; })(i));
+            navContainer.appendChild(rect);
+        }
+        // автоскролл к активному элементу
+        const activeRect = navContainer.querySelector('.active-rect');
+        if (activeRect) activeRect.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+
+    function updateStatsUI() {
+        currentNumSpan.innerText = currentIndex + 1;
+        correctCounterSpan.innerText = correctCount;
+        const percent = ((correctCount) / currentQuestions.length) * 100;
+        progressFill.style.width = `${percent}%`;
+    }
+
+    function renderCurrentQuestion() {
+        if (currentIndex >= currentQuestions.length) { finishExam(); return; }
+        const q = currentQuestions[currentIndex];
+        questionTextDiv.innerText = q.text;
+        optionsContainer.innerHTML = '';
+        const saved = userAnswers[currentIndex];
+        answerLock = (saved !== null);
+        q.options.forEach((opt, idx) => {
+            const div = document.createElement('div');
+            div.className = 'option-item';
+            div.innerHTML = `<div class="prefix">${String.fromCharCode(65+idx)}</div><div class="option-text">${opt}</div>`;
+            if (saved !== null) {
+                div.classList.add('disabled-opt');
+                if (idx === q.correct) div.classList.add('correct-highlight');
+                if (idx === saved.selectedIdx && idx !== q.correct) div.classList.add('wrong-highlight');
+            } else {
+                div.addEventListener('click', () => handleAnswer(idx, q.correct));
+            }
+            optionsContainer.appendChild(div);
+        });
+        if (saved !== null) {
+            feedbackDiv.style.display = 'block';
+            feedbackDiv.innerHTML = `<strong>${saved.isCorrect ? '✅ Верно' : '❌ Неверно'}. Правильный ответ: ${String.fromCharCode(65+q.correct)}.</strong>`;
+        } else {
+            feedbackDiv.style.display = 'none';
+            feedbackDiv.innerHTML = '';
+        }
+        updateStatsUI();
+        renderNavigation();
+    }
+
+    function handleAnswer(selected, correctIdx) {
+        if (answerLock) return;
+        const isCorrect = (selected === correctIdx);
+        if (isCorrect) correctCount++;
+        userAnswers[currentIndex] = { selectedIdx: selected, isCorrect, correctIdx };
+        answerLock = true;
+        renderCurrentQuestion();
+    }
+
+    function nextQuestion() {
+        if (!answerLock && userAnswers[currentIndex] === null) {
+            feedbackDiv.style.display = 'block';
+            feedbackDiv.innerHTML = '<strong>⚠️ Выберите вариант ответа!</strong>';
+            return;
+        }
+        if (currentIndex + 1 < currentQuestions.length) {
+            currentIndex++;
+            renderCurrentQuestion();
+        } else if (currentIndex + 1 === currentQuestions.length) {
+            if (userAnswers[currentIndex] !== null || answerLock) finishExam();
+            else {
+                feedbackDiv.style.display = 'block';
+                feedbackDiv.innerHTML = '<strong>⚠️ Ответьте на последний вопрос!</strong>';
+            }
+        }
+    }
+
+    function finishExam() {
+        const total = currentQuestions.length;
+        const percent = Math.round((correctCount / total) * 100);
+        const gradeMsg = percent >= 80 ? 'Отлично! 🎉' : (percent >= 60 ? 'Хорошо 👍' : 'Стоит повторить');
+        finalResultsDiv.style.display = 'block';
+        finalResultsDiv.innerHTML = `
+            <div class="result-panel">
+                <div class="finish-stats">🏁 Экзамен завершён</div>
+                <div style="font-size:1rem; margin:10px 0;">Правильных: ${correctCount} из ${total} (${percent}%)</div>
+                <div style="font-weight:500;">${gradeMsg}</div>
+                <button id="restartFinishBtn" class="apply-config" style="margin-top:16px;">🔄 Пройти заново</button>
+            </div>
+        `;
+        document.getElementById('restartFinishBtn')?.addEventListener('click', () => rebuildExam());
+        dynamicContent.style.display = 'none';
+    }
+
+    applyConfigBtn.addEventListener('click', () => rebuildExam());
+    resetBtn.addEventListener('click', () => rebuildExam());
+    nextBtn.addEventListener('click', nextQuestion);
+    rebuildExam();
+</script>
+</body>
+</html>
