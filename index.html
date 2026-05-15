@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Экзамен: Тестирование ПО (с кодом) — Тёмная тема</title>
+    <title>Экзамен: Тестирование ПО (умный билет) — Тёмная тема</title>
     <style>
         * {
             box-sizing: border-box;
@@ -201,15 +201,16 @@
             cursor: pointer;
             transition: 0.1s;
             flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #cbd5e6;
         }
         .nav-rect.active-rect {
             background: #f4c542;
             border-color: #facc15;
             box-shadow: 0 0 0 2px rgba(244,197,66,0.4);
-        }
-        .nav-rect.answered-status {
-            border-left: 4px solid #4ade80;
-            border-bottom: 2px solid #4ade80;
+            color: #0f172a;
         }
 
         .question-area {
@@ -252,7 +253,7 @@
             color: #f1f5f9;
         }
 
-        .option-item:hover:not(.disabled-opt) {
+        .option-item:hover {
             background: #2d3a4e;
             border-color: #f4c542;
         }
@@ -277,21 +278,16 @@
             white-space: pre-wrap;
         }
 
-        .option-item.correct-highlight {
+        .option-item.correct-feedback {
             background: #14532d;
             border-color: #4ade80;
             pointer-events: none;
         }
 
-        .option-item.wrong-highlight {
+        .option-item.wrong-feedback {
             background: #7f1a1a;
             border-color: #f87171;
             pointer-events: none;
-        }
-
-        .disabled-opt {
-            pointer-events: none;
-            opacity: 0.9;
         }
 
         .feedback {
@@ -392,12 +388,13 @@
     <div class="exam-card">
         <div class="header">
             <div class="title">
-                <h1>🐞 Тестирование ПО (pytest + Git)</h1>
-                <p>60 вопросов с реальным кодом • Адаптив iPhone</p>
+                <h1>🐞 Тестирование ПО (умный билет)</h1>
+                <p>Правильный ответ удаляет вопрос • Ошибайся — учись</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div class="stats">
                     <div>📋 <span id="total-count">0</span></div>
+                    <div>✅ <span id="correct-counter">0</span></div>
                 </div>
                 <div class="config-popup">
                     <button id="configToggleBtn" class="config-toggle">⚙️</button>
@@ -411,8 +408,8 @@
         
         <div class="progress-area">
             <div class="progress-text">
-                <span>📋 Вопрос <span id="current-num">1</span> / <span id="total-questions">60</span></span>
-                <span>✅ <span id="correct-counter">0</span></span>
+                <span>📖 Вопрос <span id="current-num">1</span> / <span id="total-questions">0</span></span>
+                <span>🏆 Выучено: <span id="correct-progress">0</span></span>
             </div>
             <div class="bar-bg"><div class="bar-fill" id="progress-fill"></div></div>
         </div>
@@ -432,11 +429,11 @@
         </div>
         <div id="final-results" style="display: none;"></div>
     </div>
-    <footer>⚡ Зелёная рамка = отвечен. Код внутри вопросов сохранён полностью.</footer>
+    <footer>✨ Верный ответ → вопрос исчезает навсегда. Неверный → остаётся для повторной попытки.</footer>
 </div>
 
 <script>
-    // ========= ПОЛНАЯ БАЗА ВОПРОСОВ (60 шт) С КОДОМ И ПРАВИЛЬНЫМИ ОТВЕТАМИ =========
+    // ==================== ПОЛНАЯ БАЗА (60 вопросов) ====================
     const fullBank = [
         { text: "1. Почему альфа-тестирование чаще выявляет архитектурные и организационные дефекты, а бета-тестирование — эксплуатационные?", options: ["A) альфа проводится только автоматически, а бета только вручную", "B) альфа проходит в контролируемой среде разработчика, а бета — в условиях реального использования", "C) бета проводится до альфа-тестирования", "D) различий между ними нет"], correct: 1 },
         { text: "2. В каком случае результаты бета-тестирования нельзя считать достаточным основанием для релиза?", options: ["A) если тестирование проводилось реальными пользователями", "B) если тестирование выполнялось вне офиса разработчика", "C) если не были проверены критичные бизнес-сценарии и регрессионные риски", "D) если пользователи оставили мало комментариев"], correct: 2 },
@@ -500,26 +497,18 @@
         { text: "60. Почему регрессионное тестирование можно рассматривать как механизм контроля архитектурной устойчивости системы?", options: ["A) оно проверяет только визуальное оформление", "B) оно позволяет обнаруживать побочные эффекты изменений в связанных частях системы", "C) оно заменяет интеграционные тесты", "D) оно выполняется только один раз перед первым релизом"], correct: 1 }
     ];
 
-    function getRandomItems(arr, count) {
-        const shuffled = [...arr];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled.slice(0, count);
-    }
-
-    let currentQuestions = [];
-    let userAnswers = [];
+    // ----- Основное состояние -----
+    let currentQuestions = [];    // оставшиеся (не выученные) вопросы
     let currentIndex = 0;
-    let correctCount = 0;
-    let answerLock = false;
+    let correctCount = 0;         // количество правильно отвеченных (удалённых)
+    let totalInitial = 0;         // начальное количество вопросов в билете
 
-    // DOM
+    // DOM элементы
     const totalCountSpan = document.getElementById('total-count');
     const currentNumSpan = document.getElementById('current-num');
     const totalSpan = document.getElementById('total-questions');
     const correctCounterSpan = document.getElementById('correct-counter');
+    const correctProgressSpan = document.getElementById('correct-progress');
     const progressFill = document.getElementById('progress-fill');
     const questionTextDiv = document.getElementById('question-text');
     const optionsContainer = document.getElementById('options-container');
@@ -534,29 +523,30 @@
     const configToggleBtn = document.getElementById('configToggleBtn');
     const configDropdown = document.getElementById('configDropdown');
 
-    configToggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        configDropdown.classList.toggle('open');
-    });
-    document.addEventListener('click', (e) => {
-        if (!configToggleBtn.contains(e.target) && !configDropdown.contains(e.target)) configDropdown.classList.remove('open');
-    });
+    // вспомогательные функции
+    function getRandomItems(arr, count) {
+        const shuffled = [...arr];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled.slice(0, count);
+    }
 
-    function rebuildExam() {
-        let qCount = parseInt(totalLimitInput.value);
-        if (isNaN(qCount)) qCount = 30;
-        qCount = Math.min(60, Math.max(10, qCount));
-        currentQuestions = getRandomItems(fullBank, qCount);
-        userAnswers = new Array(currentQuestions.length).fill(null);
-        currentIndex = 0;
-        correctCount = 0;
-        answerLock = false;
-        totalCountSpan.innerText = currentQuestions.length;
-        totalSpan.innerText = currentQuestions.length;
-        finalResultsDiv.style.display = 'none';
-        dynamicContent.style.display = 'block';
-        renderNavigation();
-        renderCurrentQuestion();
+    function updateStatsUI() {
+        // обновляем счётчики и прогресс-бар
+        correctCounterSpan.innerText = correctCount;
+        correctProgressSpan.innerText = correctCount;
+        const totalCurr = currentQuestions.length;
+        totalCountSpan.innerText = totalCurr;
+        totalSpan.innerText = totalCurr;
+        if (currentIndex >= 0 && totalCurr > 0) {
+            currentNumSpan.innerText = currentIndex + 1;
+        } else {
+            currentNumSpan.innerText = 0;
+        }
+        const percent = totalInitial > 0 ? (correctCount / totalInitial) * 100 : 0;
+        progressFill.style.width = `${percent}%`;
     }
 
     function renderNavigation() {
@@ -564,106 +554,190 @@
         for (let i = 0; i < currentQuestions.length; i++) {
             const rect = document.createElement('div');
             rect.classList.add('nav-rect');
-            if (userAnswers[i] !== null) rect.classList.add('answered-status');
             if (i === currentIndex) rect.classList.add('active-rect');
-            rect.addEventListener('click', (function(idx) { return function() {
-                if (currentIndex !== idx) {
-                    currentIndex = idx;
-                    renderCurrentQuestion();
-                    renderNavigation();
-                }
-            }; })(i));
+            rect.textContent = i + 1;
+            rect.addEventListener('click', (function(idx) {
+                return () => {
+                    if (idx !== currentIndex && idx < currentQuestions.length) {
+                        currentIndex = idx;
+                        renderCurrentQuestion();
+                        renderNavigation();
+                    }
+                };
+            })(i));
             navContainer.appendChild(rect);
         }
         const activeRect = navContainer.querySelector('.active-rect');
         if (activeRect) activeRect.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
 
-    function updateStatsUI() {
-        currentNumSpan.innerText = currentIndex + 1;
-        correctCounterSpan.innerText = correctCount;
-        const percent = (correctCount / currentQuestions.length) * 100;
-        progressFill.style.width = `${percent}%`;
+    function showFeedback(message, isError = true) {
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.innerHTML = `<strong>${isError ? '❌' : '✅'} ${message}</strong>`;
+    }
+
+    function clearFeedback() {
+        feedbackDiv.style.display = 'none';
+        feedbackDiv.innerHTML = '';
+    }
+
+    // правильный ответ: удаляем вопрос
+    function handleCorrect() {
+        // увеличиваем счётчик выученных вопросов
+        correctCount++;
+        // удаляем текущий вопрос из массива
+        currentQuestions.splice(currentIndex, 1);
+        
+        // обновляем общую статистику
+        updateStatsUI();
+        
+        if (currentQuestions.length === 0) {
+            finishExam();
+            return;
+        }
+        
+        // корректируем индекс: если удалили последний элемент, переходим на предыдущий
+        if (currentIndex >= currentQuestions.length) {
+            currentIndex = currentQuestions.length - 1;
+        }
+        // перерисовываем всё
+        renderCurrentQuestion();
+        renderNavigation();
+        // после правильного ответа показываем краткое поздравление в футере? можно тихо, но лучше оставить сообщение на пару секунд
+        showFeedback('✅ Верно! Вопрос удалён из билета.', false);
+        setTimeout(() => {
+            if (feedbackDiv.style.display !== 'none' && feedbackDiv.innerHTML.includes('Верно!')) clearFeedback();
+        }, 1800);
+    }
+
+    function handleIncorrect(selectedIdx, correctIdx) {
+        const correctLetter = String.fromCharCode(65 + correctIdx);
+        showFeedback(`Неверно. Правильный ответ: ${correctLetter}. Попробуйте ещё раз или перейдите к другому вопросу.`, true);
+        // Визуально подсветим выбранный неправильный вариант и правильный
+        const options = document.querySelectorAll('.option-item');
+        options.forEach((opt, idx) => {
+            if (idx === correctIdx) {
+                opt.classList.add('correct-feedback');
+            }
+            if (idx === selectedIdx && idx !== correctIdx) {
+                opt.classList.add('wrong-feedback');
+            }
+        });
+        // Через 2 секунды убираем подсветку, но не блокируем повторные попытки
+        setTimeout(() => {
+            options.forEach(opt => {
+                opt.classList.remove('correct-feedback', 'wrong-feedback');
+            });
+            if (feedbackDiv.style.display !== 'none' && feedbackDiv.innerHTML.includes('Неверно')) {
+                // оставляем сообщение, но подсветку убрали
+            }
+        }, 2000);
+    }
+
+    function handleAnswer(selectedIdx) {
+        if (currentQuestions.length === 0) return;
+        const currentQ = currentQuestions[currentIndex];
+        const isCorrect = (selectedIdx === currentQ.correct);
+        if (isCorrect) {
+            handleCorrect();
+        } else {
+            handleIncorrect(selectedIdx, currentQ.correct);
+        }
     }
 
     function renderCurrentQuestion() {
-        if (currentIndex >= currentQuestions.length) { finishExam(); return; }
+        if (currentQuestions.length === 0) {
+            finishExam();
+            return;
+        }
+        clearFeedback();
         const q = currentQuestions[currentIndex];
         questionTextDiv.innerText = q.text;
         optionsContainer.innerHTML = '';
-        const saved = userAnswers[currentIndex];
-        answerLock = (saved !== null);
+        
         q.options.forEach((opt, idx) => {
             const div = document.createElement('div');
             div.className = 'option-item';
             div.innerHTML = `<div class="prefix">${String.fromCharCode(65+idx)}</div><div class="option-text">${opt}</div>`;
-            if (saved !== null) {
-                div.classList.add('disabled-opt');
-                if (idx === q.correct) div.classList.add('correct-highlight');
-                if (idx === saved.selectedIdx && idx !== q.correct) div.classList.add('wrong-highlight');
-            } else {
-                div.addEventListener('click', () => handleAnswer(idx, q.correct));
-            }
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentQuestions.length === 0) return;
+                handleAnswer(idx);
+            });
             optionsContainer.appendChild(div);
         });
-        if (saved !== null) {
-            feedbackDiv.style.display = 'block';
-            feedbackDiv.innerHTML = `<strong>${saved.isCorrect ? '✅ Верно' : '❌ Неверно'}. Правильный ответ: ${String.fromCharCode(65+q.correct)}.</strong>`;
-        } else {
-            feedbackDiv.style.display = 'none';
-            feedbackDiv.innerHTML = '';
-        }
+        
         updateStatsUI();
         renderNavigation();
     }
 
-    function handleAnswer(selected, correctIdx) {
-        if (answerLock) return;
-        const isCorrect = (selected === correctIdx);
-        if (isCorrect) correctCount++;
-        userAnswers[currentIndex] = { selectedIdx: selected, isCorrect, correctIdx };
-        answerLock = true;
-        renderCurrentQuestion();
-    }
-
     function nextQuestion() {
-        if (!answerLock && userAnswers[currentIndex] === null) {
-            feedbackDiv.style.display = 'block';
-            feedbackDiv.innerHTML = '<strong>⚠️ Выберите вариант ответа!</strong>';
+        if (currentQuestions.length === 0) {
+            finishExam();
             return;
         }
+        // переход к следующему вопросу (циклически, чтобы не застревать)
         if (currentIndex + 1 < currentQuestions.length) {
             currentIndex++;
-            renderCurrentQuestion();
-        } else if (currentIndex + 1 === currentQuestions.length) {
-            if (userAnswers[currentIndex] !== null || answerLock) finishExam();
-            else {
-                feedbackDiv.style.display = 'block';
-                feedbackDiv.innerHTML = '<strong>⚠️ Ответьте на последний вопрос!</strong>';
-            }
+        } else {
+            // если в конце, переходим в начало
+            currentIndex = 0;
         }
+        renderCurrentQuestion();
+        clearFeedback(); // убираем старые сообщения об ошибках при смене вопроса
     }
 
     function finishExam() {
-        const total = currentQuestions.length;
-        const percent = Math.round((correctCount / total) * 100);
-        const gradeMsg = percent >= 80 ? 'Отлично! 🎉' : (percent >= 60 ? 'Хорошо 👍' : 'Стоит повторить');
+        dynamicContent.style.display = 'none';
         finalResultsDiv.style.display = 'block';
+        const total = totalInitial;
+        const percent = total > 0 ? Math.round((correctCount / total) * 100) : 100;
+        let gradeMsg = percent >= 80 ? '🎉 Отлично! Вы освоили все вопросы!' : (percent >= 60 ? '👍 Хороший результат, повторите оставшиеся' : '📚 Стоит ещё потренироваться');
+        if (currentQuestions.length === 0) gradeMsg = '🏆 Блестяще! Все вопросы успешно сданы!';
         finalResultsDiv.innerHTML = `
             <div class="result-panel">
                 <div class="finish-stats">🏁 Экзамен завершён</div>
-                <div style="font-size:1rem; margin:10px 0;">Правильных: ${correctCount} из ${total} (${percent}%)</div>
-                <div style="font-weight:500;">${gradeMsg}</div>
-                <button id="restartFinishBtn" class="apply-config" style="margin-top:16px;">🔄 Пройти заново</button>
+                <div style="font-size:1rem; margin:10px 0;">✅ Выучено вопросов: ${correctCount} из ${total} (${percent}%)</div>
+                <div style="font-weight:500; margin-bottom:12px;">${gradeMsg}</div>
+                <button id="restartFinishBtn" class="apply-config" style="margin-top:8px;">🔄 Новый билет</button>
             </div>
         `;
         document.getElementById('restartFinishBtn')?.addEventListener('click', () => rebuildExam());
-        dynamicContent.style.display = 'none';
     }
 
-    applyConfigBtn.addEventListener('click', () => rebuildExam());
+    function rebuildExam() {
+        let qCount = parseInt(totalLimitInput.value);
+        if (isNaN(qCount)) qCount = 30;
+        qCount = Math.min(60, Math.max(10, qCount));
+        const randomQuestions = getRandomItems(fullBank, qCount);
+        currentQuestions = randomQuestions.map(q => ({ ...q })); // копия
+        totalInitial = currentQuestions.length;
+        correctCount = 0;
+        currentIndex = 0;
+        
+        finalResultsDiv.style.display = 'none';
+        dynamicContent.style.display = 'block';
+        clearFeedback();
+        renderCurrentQuestion();
+        updateStatsUI();
+        renderNavigation();
+    }
+
+    // обработчики событий
+    applyConfigBtn.addEventListener('click', () => {
+        configDropdown.classList.remove('open');
+        rebuildExam();
+    });
     resetBtn.addEventListener('click', () => rebuildExam());
     nextBtn.addEventListener('click', nextQuestion);
+    configToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        configDropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+        if (!configToggleBtn.contains(e.target) && !configDropdown.contains(e.target)) configDropdown.classList.remove('open');
+    });
+    
     rebuildExam();
 </script>
 </body>
