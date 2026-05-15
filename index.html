@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Экзамен: Тестирование ПО — Тёмная тема | Адаптив iPhone</title>
+    <title>Экзамен: Тестирование ПО (с кодом) — Тёмная тема</title>
     <style>
         * {
             box-sizing: border-box;
@@ -33,7 +33,6 @@
             border: 1px solid #2d3a4e;
         }
 
-        /* шапка — адаптив */
         .header {
             background: #0b1120;
             padding: 16px 20px;
@@ -177,7 +176,6 @@
             transition: width 0.2s ease;
         }
 
-        /* Навигация прямоугольниками — горизонтальный скролл для iPhone */
         .question-nav {
             background: #0f172a;
             padding: 12px 16px;
@@ -219,15 +217,17 @@
         }
 
         .question-text {
-            font-size: 1.2rem;
-            font-weight: 600;
-            line-height: 1.35;
+            font-size: 1.1rem;
+            font-weight: 500;
+            line-height: 1.45;
             margin-bottom: 24px;
             background: #111c2e;
             padding: 16px 18px;
             border-radius: 18px;
             border-left: 5px solid #f4c542;
             word-break: break-word;
+            white-space: pre-wrap;
+            font-family: monospace;
         }
 
         .options-list {
@@ -247,7 +247,7 @@
             cursor: pointer;
             transition: 0.12s;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
             color: #f1f5f9;
         }
@@ -260,7 +260,7 @@
         .prefix {
             font-weight: 800;
             background: #2d3a4e;
-            width: 32px;
+            min-width: 32px;
             height: 32px;
             display: inline-flex;
             align-items: center;
@@ -274,6 +274,7 @@
         .option-text {
             flex: 1;
             line-height: 1.4;
+            white-space: pre-wrap;
         }
 
         .option-item.correct-highlight {
@@ -352,7 +353,6 @@
             color: #6c757d;
         }
 
-        /* iPhone 12/14 специальные фиксы */
         @media (max-width: 480px) {
             body {
                 padding: 12px 10px 24px 10px;
@@ -367,11 +367,8 @@
                 padding: 4px 10px;
                 gap: 8px;
             }
-            .stats span {
-                font-size: 0.7rem;
-            }
             .question-text {
-                font-size: 1rem;
+                font-size: 0.95rem;
                 padding: 14px 16px;
             }
             .option-item {
@@ -379,31 +376,13 @@
                 gap: 10px;
             }
             .prefix {
-                width: 28px;
+                min-width: 28px;
                 height: 28px;
                 font-size: 0.8rem;
             }
             .nav-rect {
                 min-width: 34px;
                 height: 34px;
-            }
-            .action-buttons {
-                gap: 10px;
-            }
-            .next-btn, .reset-exam-btn {
-                padding: 10px 12px;
-                font-size: 0.85rem;
-            }
-        }
-
-        /* Средние экраны (iPhone 12/14 в портрете) */
-        @media (min-width: 375px) and (max-width: 430px) {
-            .question-text {
-                font-size: 1.05rem;
-            }
-            .nav-rect {
-                min-width: 36px;
-                height: 36px;
             }
         }
     </style>
@@ -413,18 +392,17 @@
     <div class="exam-card">
         <div class="header">
             <div class="title">
-                <h1>🧪 Тестирование ПО</h1>
-                <p>60 вопросов • Альфа/бета • pytest • Git Flow</p>
+                <h1>🐞 Тестирование ПО (pytest + Git)</h1>
+                <p>60 вопросов с реальным кодом • Адаптив iPhone</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div class="stats">
-                    <div>📖 <span id="theory-count">0</span></div>
-                    <div>⚙️ <span id="practice-count">0</span></div>
+                    <div>📋 <span id="total-count">0</span></div>
                 </div>
                 <div class="config-popup">
                     <button id="configToggleBtn" class="config-toggle">⚙️</button>
                     <div id="configDropdown" class="config-dropdown">
-                        <div class="config-item"><label>📘 Кол-во вопросов:</label><input type="number" id="total-limit" min="10" max="60" value="30" step="1"></div>
+                        <div class="config-item"><label>🎯 Кол-во вопросов:</label><input type="number" id="total-limit" min="10" max="60" value="30" step="1"></div>
                         <button id="applyConfigBtn" class="apply-config">🎲 Применить</button>
                     </div>
                 </div>
@@ -454,12 +432,12 @@
         </div>
         <div id="final-results" style="display: none;"></div>
     </div>
-    <footer>⚡ Прямоугольники — навигация. Зелёная рамка = отвечен. ⚙️ меняет кол-во вопросов.</footer>
+    <footer>⚡ Зелёная рамка = отвечен. Код внутри вопросов сохранён полностью.</footer>
 </div>
 
 <script>
-    // ---------- НОВАЯ БАЗА ВОПРОСОВ (60 шт, по твоему списку) ----------
-    const fullQuestionBank = [
+    // ========= ПОЛНАЯ БАЗА ВОПРОСОВ (60 шт) С КОДОМ И ПРАВИЛЬНЫМИ ОТВЕТАМИ =========
+    const fullBank = [
         { text: "1. Почему альфа-тестирование чаще выявляет архитектурные и организационные дефекты, а бета-тестирование — эксплуатационные?", options: ["A) альфа проводится только автоматически, а бета только вручную", "B) альфа проходит в контролируемой среде разработчика, а бета — в условиях реального использования", "C) бета проводится до альфа-тестирования", "D) различий между ними нет"], correct: 1 },
         { text: "2. В каком случае результаты бета-тестирования нельзя считать достаточным основанием для релиза?", options: ["A) если тестирование проводилось реальными пользователями", "B) если тестирование выполнялось вне офиса разработчика", "C) если не были проверены критичные бизнес-сценарии и регрессионные риски", "D) если пользователи оставили мало комментариев"], correct: 2 },
         { text: "3. Почему приёмочное тестирование не заменяет полноценное функциональное тестирование?", options: ["A) потому что приёмочное тестирование проверяет готовность системы для заказчика, но не гарантирует полное покрытие требований", "B) потому что оно выполняется только разработчиками", "C) потому что оно всегда автоматизировано", "D) потому что оно не связано с пользовательскими сценариями"], correct: 0 },
@@ -480,29 +458,29 @@
         { text: "18. Почему реальные пользовательские данные без профилирования могут быть плохой основой для тестов?", options: ["A) они всегда слишком маленькие", "B) они могут содержать скрытые аномалии, смещения и непредставительные распределения", "C) pytest не умеет работать с реальными данными", "D) реальные данные нельзя использовать ни при каких условиях"], correct: 1 },
         { text: "19. Почему необработанные исключения считаются проблемой качества системы?", options: ["A) они делают поведение системы непредсказуемым для пользователя и тестировщика", "B) они ускоряют завершение программы", "C) они всегда означают ошибку pytest", "D) они относятся только к синтаксису Python"], correct: 0 },
         { text: "20. В каком случае блок finally особенно важен?", options: ["A) когда нужно освободить ресурс независимо от того, возникло исключение или нет", "B) когда нужно заменить assert", "C) когда тест должен быть пропущен", "D) когда функция не возвращает значение"], correct: 0 },
-        { text: "21. Что покажет выполнение тестов? (код с pytest fixture и users)", options: ["A) первый тест упадёт, второй пройдёт", "B) оба теста упадут", "C) оба теста пройдут успешно", "D) первый тест пройдёт, второй упадёт"], correct: 2 },
-        { text: "22. Что является главной проблемой тестового набора? (cart, add_product, get_total)", options: ["A) pytest не умеет тестировать списки", "B) функция get_total не использует return", "C) тесты зависят от общего изменяемого состояния", "D) в тестах нельзя использовать словари"], correct: 2 },
-        { text: "23. Какой результат наиболее вероятен при запуске всего файла? (fixture module scope orders)", options: ["A) тесты не запустятся из-за ошибки синтаксиса", "B) pytest автоматически создаст копию списка для каждого теста", "C) оба теста пройдут, потому что fixture очищается перед каждым тестом", "D) второй тест может упасть, потому что fixture с module scope хранит общий список"], correct: 3 },
-        { text: "24. Что проверяет этот тест наиболее корректно? (calculate_discount с parametrize)", options: ["A) только работу fixture", "B) разные бизнес-правила расчёта скидки для типов пользователей", "C) только обработку исключений", "D) только производительность функции"], correct: 1 },
-        { text: "25. Рассмотрите функцию calculate_discount(price). Какой минимальный набор тестов обеспечивает полное покрытие ветвлений?", options: ["A) price = 10", "B) price = -1, price = 0", "C) price = -1, price = 0, price = 50, price = 150", "D) price = 0.0, price = 100.0"], correct: 2 },
-        { text: "26. Что произойдёт при выполнении теста? (calculate_discount с raise ValueError)", options: ["A) тест будет пропущен", "B) функция вернёт -90 и тест пройдёт", "C) тест пройдёт успешно", "D) тест упадёт, потому что исключения нельзя проверять через pytest"], correct: 2 },
-        { text: "27. Что является проблемой этого теста? (get_user_role только admin)", options: ["A) функция не возвращает значение", "B) проверяется только одна ветка логики", "C) pytest не поддерживает словари"], correct: 1 },
+        { text: "21. Что покажет выполнение тестов?\n\nimport pytest\n\nusers = []\n\n@pytest.fixture\ndef user_storage():\n    users.clear()\n    return users\n\ndef register_user(storage, email):\n    if \"@\" not in email:\n        raise ValueError(\"Некорректный email\")\n    storage.append(email)\n    return True\n\ndef test_valid_registration(user_storage):\n    assert register_user(user_storage, \"user@mail.ru\") is True\n    assert user_storage == [\"user@mail.ru\"]\n\ndef test_invalid_registration(user_storage):\n    with pytest.raises(ValueError):\n        register_user(user_storage, \"wrong-email\")\n    assert user_storage == []", options: ["A) первый тест упадёт, второй пройдёт", "B) оба теста упадут", "C) оба теста пройдут успешно", "D) первый тест пройдёт, второй упадёт"], correct: 2 },
+        { text: "22. Что является главной проблемой тестового набора?\n\ncart = []\n\ndef add_product(product):\n    cart.append(product)\n\ndef get_total():\n    return sum(item[\"price\"] for item in cart)\n\ndef test_add_phone():\n    add_product({\"name\": \"phone\", \"price\": 50000})\n    assert get_total() == 50000\n\ndef test_add_case():\n    add_product({\"name\": \"case\", \"price\": 1000})\n    assert get_total() == 1000", options: ["A) pytest не умеет тестировать списки", "B) функция get_total не использует return", "C) тесты зависят от общего изменяемого состояния", "D) в тестах нельзя использовать словари"], correct: 2 },
+        { text: "23. Какой результат наиболее вероятен при запуске всего файла?\n\nimport pytest\n\n@pytest.fixture(scope=\"module\")\ndef orders():\n    return []\n\ndef create_order(orders, user_id, amount):\n    order = {\"user_id\": user_id, \"amount\": amount}\n    orders.append(order)\n    return order\n\ndef test_create_first_order(orders):\n    create_order(orders, 1, 1500)\n    assert len(orders) == 1\n\ndef test_create_second_order(orders):\n    create_order(orders, 2, 2000)\n    assert len(orders) == 1", options: ["A) тесты не запустятся из-за ошибки синтаксиса", "B) pytest автоматически создаст копию списка для каждого теста", "C) оба теста пройдут, потому что fixture очищается перед каждым тестом", "D) второй тест может упасть, потому что fixture с module scope хранит общий список"], correct: 3 },
+        { text: "24. Что проверяет этот тест наиболее корректно?\n\nimport pytest\n\ndef calculate_discount(price, user_type):\n    if price < 0:\n        raise ValueError(\"price cannot be negative\")\n    if user_type == \"vip\":\n        return price * 0.8\n    if user_type == \"regular\":\n        return price * 0.95\n    return price\n\n@pytest.mark.parametrize(\n    \"price,user_type,expected\",\n    [\n        (1000, \"vip\", 800),\n        (1000, \"regular\", 950),\n        (1000, \"guest\", 1000),\n    ]\n)\ndef test_calculate_discount(price, user_type, expected):\n    assert calculate_discount(price, user_type) == expected", options: ["A) только работу fixture", "B) разные бизнес-правила расчёта скидки для типов пользователей", "C) только обработку исключений", "D) только производительность функции"], correct: 1 },
+        { text: "25. Рассмотрите функцию\n\ndef calculate_discount(price):\n    if price < 0:\n        raise ValueError(\"negative price\")\n    if price == 0:\n        return 0\n    if price > 100:\n        return price * 0.8\n    return price * 0.9\n\nКакой минимальный набор тестов обеспечивает полное покрытие ветвлений?", options: ["A) price = 10", "B) price = -1, price = 0", "C) price = -1, price = 0, price = 50, price = 150", "D) price = 0.0, price = 100.0"], correct: 2 },
+        { text: "26. Что произойдёт при выполнении теста?\n\nimport pytest\n\ndef calculate_discount(price):\n    if price < 0:\n        raise ValueError(\"negative price\")\n    return price * 0.9\n\ndef test_negative_price():\n    with pytest.raises(ValueError):\n        calculate_discount(-100)", options: ["A) тест будет пропущен", "B) функция вернёт -90 и тест пройдёт", "C) тест пройдёт успешно", "D) тест упадёт, потому что исключения нельзя проверять через pytest"], correct: 2 },
+        { text: "27. Что является проблемой этого теста?\n\ndef get_user_role(user):\n    if user[\"is_admin\"]:\n        return \"admin\"\n    return \"user\"\n\ndef test_user_role():\n    user = {\"name\": \"Ivan\", \"is_admin\": True}\n    assert get_user_role(user) == \"admin\"", options: ["A) функция не возвращает значение", "B) проверяется только одна ветка логики", "C) pytest не поддерживает словари", "D) тест не содержит assert"], correct: 1 },
         { text: "28. Почему при тестировании функции с условным оператором важно проверять обе ветви выполнения?", options: ["A) потому что pytest требует минимум два теста для каждой функции", "B) потому что разные ветви могут содержать разную логику и разные потенциальные дефекты", "C) потому что условные операторы нельзя тестировать автоматически", "D) потому что один тест всегда проверяет все возможные варианты поведения"], correct: 1 },
-        { text: "29. Что произойдёт при выполнении тестов? (fixture user, withdraw)", options: ["A) второй тест упадёт из-за изменения баланса в первом тесте", "B) pytest выполнит fixture только один раз на файл", "C) оба теста пройдут, потому что fixture создаёт новый словарь для каждого теста", "D) первый тест упадёт, второй пройдёт"], correct: 2 },
-        { text: "30. Как влияет использование fixture с параметром scope='module' на тесты, использующие изменяемые объекты?", options: ["A) fixture будет выполняться перед каждой строкой теста", "B) каждый тест получит полностью независимую копию объекта", "C) изменённое состояние объекта может сохраняться между тестами одного модуля", "D) pytest перестанет создавать fixture автоматически"], correct: 2 },
-        { text: "31. Что проверяет данный набор параметров? (age boundaries)", options: ["A) только значения внутри допустимого диапазона", "B) только некорректные значения", "C) граничные значения диапазона и выход за его пределы", "D) случайные тестовые данные"], correct: 2 },
-        { text: "32. Какой недостаток есть у этого теста? (смешанные успешные и ошибочные)", options: ["A) в одном тесте смешаны успешные и ошибочные сценарии", "B) pytest не поддерживает if внутри теста", "C) параметризация не работает с числами", "D) нельзя использовать pytest.raises внутри параметризованного теста"], correct: 0 },
-        { text: "33. Какой вариант параметризации лучше с точки зрения читаемости отчёта, сопровождения и разделения тестовых случаев?", options: ["A) вариант A", "B) вариант B (явные expected + ids)", "C) вариант C (цикл внутри)", "D) вариант D (if внутри)"], correct: 1 },
-        { text: "34. Что произойдёт при выполнении теста? (normalize_email)", options: ["A) тест упадёт", "B) возникнет ValueError", "C) pytest не сможет сравнить строки", "D) тест пройдёт успешно"], correct: 3 },
+        { text: "29. Что произойдёт при выполнении тестов?\n\nimport pytest\n\n@pytest.fixture\ndef user():\n    return {\"balance\": 1000}\n\ndef withdraw(user, amount):\n    if amount > user[\"balance\"]:\n        raise ValueError(\"not enough money\")\n    user[\"balance\"] -= amount\n    return user[\"balance\"]\n\ndef test_success_withdraw(user):\n    assert withdraw(user, 300) == 700\n\ndef test_failed_withdraw(user):\n    with pytest.raises(ValueError):\n        withdraw(user, 1500)\n    assert user[\"balance\"] == 1000", options: ["A) второй тест упадёт из-за изменения баланса в первом тесте", "B) pytest выполнит fixture только один раз на файл", "C) оба теста пройдут, потому что fixture создаёт новый словарь для каждого теста", "D) первый тест упадёт, второй пройдёт"], correct: 2 },
+        { text: "30. Как влияет использование fixture с параметром scope=\"module\" на тесты, использующие изменяемые объекты (например список или словарь)?", options: ["A) fixture будет выполняться перед каждой строкой теста", "B) каждый тест получит полностью независимую копию объекта", "C) изменённое состояние объекта может сохраняться между тестами одного модуля", "D) pytest перестанет создавать fixture автоматически"], correct: 2 },
+        { text: "31. Что проверяет данный набор параметров?\n\nimport pytest\n\ndef validate_age(age):\n    if not isinstance(age, int):\n        raise TypeError(\"age must be int\")\n    if age < 18 or age > 60:\n        raise ValueError(\"invalid age\")\n    return True\n\n@pytest.mark.parametrize(\"age\", [17, 18, 19, 60, 61])\ndef test_age_boundaries(age):\n    if age in [17, 61]:\n        with pytest.raises(ValueError):\n            validate_age(age)\n    else:\n        assert validate_age(age) is True", options: ["A) только значения внутри допустимого диапазона", "B) только некорректные значения", "C) граничные значения диапазона и выход за его пределы", "D) случайные тестовые данные"], correct: 2 },
+        { text: "32. Какой недостаток есть у этого теста?\n\n@pytest.mark.parametrize(\"age\", [17, 18, 19, 60, 61])\ndef test_age_boundaries(age):\n    if age in [17, 61]:\n        with pytest.raises(ValueError):\n            validate_age(age)\n    else:\n        assert validate_age(age) is True", options: ["A) в одном тесте смешаны успешные и ошибочные сценарии", "B) pytest не поддерживает if внутри теста", "C) параметризация не работает с числами", "D) нельзя использовать pytest.raises внутри параметризованного теста"], correct: 0 },
+        { text: "33. Какой вариант параметризации лучше с точки зрения читаемости отчёта, сопровождения и разделения тестовых случаев?\n\nA) @pytest.mark.parametrize(\"age\", [17, 18, 19, 60, 61])\n   def test_age_validation(age):\n       assert is_valid_age(age) == (18 <= age <= 60)\n\nB) @pytest.mark.parametrize(\"age,expected\", [(17, False), (18, True), (19, True), (60, True), (61, False)], ids=[\"below_min\",\"min_boundary\",\"inside_range\",\"max_boundary\",\"above_max\"])\n   def test_age_validation(age, expected):\n       assert is_valid_age(age) == expected\n\nC) def test_age_validation():\n       for age in [17, 18, 19, 60, 61]:\n           assert is_valid_age(age) == (18 <= age <= 60)\n\nD) @pytest.mark.parametrize(\"age\", [17, 18, 19, 60, 61])\n   def test_age_validation(age):\n       if age in [17, 61]:\n           assert is_valid_age(age) is False\n       else:\n           assert is_valid_age(age) is True", options: ["A) Вариант A", "B) Вариант B", "C) Вариант C", "D) Вариант D"], correct: 1 },
+        { text: "34. Что произойдёт при выполнении теста?\n\ndef normalize_email(email):\n    return email.strip().lower()\n\ndef test_normalize_email():\n    assert normalize_email(\" User@MAIL.RU \") == \"user@mail.ru\"", options: ["A) тест упадёт", "B) возникнет ValueError", "C) pytest не сможет сравнить строки", "D) тест пройдёт успешно"], correct: 3 },
         { text: "35. Какой важный сценарий не проверяет предыдущий тест?", options: ["A) работу метода lower()", "B) сравнение строк", "C) пустую строку или некорректный email", "D) наличие пробелов и верхнего регистра"], correct: 2 },
-        { text: "36. Что произойдёт при выполнении теста? (get_status_code, ожидание 201)", options: ["A) тест пройдёт успешно", "B) возникнет KeyError", "C) pytest проигнорирует assert", "D) тест упадёт из-за несовпадения ожидаемого и фактического значения"], correct: 3 },
-        { text: "37. Какой тест лучше проверяет обработку отсутствующего поля status?", options: ["A) просто проверка существующего", "B) с pytest.raises(KeyError)", "C) assert True", "D) print"], correct: 1 },
-        { text: "38. Почему использование слишком широких ожидаемых результатов снижает диагностическую ценность теста?", options: ["A) потому что тест становится зависимым от версии Python", "B) потому что усложняется определение причины ошибки при падении теста", "C) потому что pytest не поддерживает множественные ожидаемые значения", "D) потому что такие тесты нельзя автоматизировать"], correct: 1 },
+        { text: "36. Что произойдёт при выполнении теста?\n\ndef get_status_code(response):\n    return response[\"status\"]\n\ndef test_response_status():\n    response = {\"status\": 200, \"body\": {\"ok\": True}}\n    assert get_status_code(response) == 201", options: ["A) тест пройдёт успешно", "B) возникнет KeyError", "C) pytest проигнорирует assert", "D) тест упадёт из-за несовпадения ожидаемого и фактического значения"], correct: 3 },
+        { text: "37. Какой тест лучше проверяет обработку отсутствующего поля status?\n\nA) def test_response_without_status():\n       response = {\"status\": 200}\n       assert response[\"status\"] == 200\n\nB) import pytest\n   def test_response_without_status():\n       response = {\"body\": {\"ok\": True}}\n       with pytest.raises(KeyError):\n           get_status_code(response)\n\nC) def test_response_without_status():\n       assert True\n\nD) def test_response_without_status():\n       print(get_status_code)", options: ["A) Вариант A", "B) Вариант B", "C) Вариант C", "D) Вариант D"], correct: 1 },
+        { text: "38. Почему использование слишком широких ожидаемых результатов (например, допуска нескольких различных корректных исходов без уточнения контекста) снижает диагностическую ценность теста?", options: ["A) потому что тест становится зависимым от версии Python", "B) потому что усложняется определение причины ошибки при падении теста", "C) потому что pytest не поддерживает множественные ожидаемые значения", "D) потому что такие тесты нельзя автоматизировать"], correct: 1 },
         { text: "39. Какой вариант ожидания лучше для теста создания нового пользователя?", options: ["A) assert True", "B) assert response.status_code in [200, 201, 400, 500]", "C) assert response.status_code == 201", "D) assert response.status_code"], correct: 2 },
-        { text: "40. Что проверяет тест? (login с parametrize негативные)", options: ["A) негативные сценарии авторизации", "B) только успешную авторизацию", "C) производительность авторизации", "D) работу Git"], correct: 0 },
+        { text: "40. Что проверяет тест?\n\nimport pytest\n\ndef login(user, password):\n    if user == \"admin\" and password == \"12345\":\n        return \"token\"\n    raise PermissionError(\"invalid credentials\")\n\n@pytest.mark.parametrize(\n    \"user,password\",\n    [\n        (\"admin\", \"wrong\"),\n        (\"unknown\", \"12345\"),\n        (\"\", \"\"),\n    ]\n)\ndef test_invalid_login(user, password):\n    with pytest.raises(PermissionError):\n        login(user, password)", options: ["A) негативные сценарии авторизации", "B) только успешную авторизацию", "C) производительность авторизации", "D) работу Git"], correct: 0 },
         { text: "41. Почему несколько декораторов parametrize повышают полноту проверки комбинаций входных данных?", options: ["A) потому что pytest выполняет только последний декоратор", "B) потому что создаётся декартово произведение наборов параметров", "C) потому что тест выполняется один раз", "D) потому что параметры игнорируются"], correct: 1 },
-        { text: "42. Сколько тестовых случаев создаст pytest? (3 декоратора parametrize)", options: ["A) 3", "B) 6", "C) 8", "D) 12"], correct: 2 },
-        { text: "43. В каком случае использование autouse=True для fixture может ухудшить архитектуру тестового набора?", options: ["A) когда подготовка тестового окружения выполняется неявно и становится трудно определить зависимости", "B) когда fixture выполняется перед каждым тестом независимо от области применения", "C) когда fixture нельзя использовать совместно с параметризацией", "D) когда fixture невозможно переопределить"], correct: 0 },
+        { text: "42. Сколько тестовых случаев создаст pytest?\n\nimport pytest\n\n@pytest.mark.parametrize(\"role\", [\"admin\", \"user\"])\n@pytest.mark.parametrize(\"active\", [True, False])\n@pytest.mark.parametrize(\"verified\", [True, False])\ndef test_access_matrix(role, active, verified):\n    assert isinstance(role, str)\n    assert isinstance(active, bool)\n    assert isinstance(verified, bool)", options: ["A) 3", "B) 6", "C) 8", "D) 12"], correct: 2 },
+        { text: "43. В каком случае использование autouse=True для fixture может ухудшить архитектуру тестового набора?", options: ["A) когда подготовка тестового окружения выполняется неявно и становится трудно определить зависимости между тестами", "B) когда fixture выполняется перед каждым тестом независимо от области применения", "C) когда fixture нельзя использовать совместно с параметризацией тестов", "D) когда fixture невозможно переопределить в отдельных тестовых модулях"], correct: 0 },
         { text: "44. Почему пользовательские маркеры pytest полезны в больших проектах?", options: ["A) они позволяют группировать и запускать тесты по категориям, рискам или типам проверки", "B) они заменяют все fixture", "C) они автоматически исправляют ошибки", "D) они уменьшают количество требований"], correct: 0 },
         { text: "45. В каком случае пользовательские маркеры помогают реализовать риск-ориентированный подход?", options: ["A) когда тесты высокого риска можно запускать отдельно и чаще остальных", "B) когда все тесты всегда запускаются без фильтрации", "C) когда тесты удаляются после каждого релиза", "D) когда pytest запускается без конфигурации"], correct: 0 },
         { text: "46. Что является основной задачей ветки develop в Git Flow с точки зрения тестирования?", options: ["A) хранение production-версии без изменений", "B) интеграция новых функций перед релизной стабилизацией", "C) срочное исправление дефектов на production", "D) хранение только документации"], correct: 1 },
@@ -522,7 +500,6 @@
         { text: "60. Почему регрессионное тестирование можно рассматривать как механизм контроля архитектурной устойчивости системы?", options: ["A) оно проверяет только визуальное оформление", "B) оно позволяет обнаруживать побочные эффекты изменений в связанных частях системы", "C) оно заменяет интеграционные тесты", "D) оно выполняется только один раз перед первым релизом"], correct: 1 }
     ];
 
-    // Функция случайной выборки
     function getRandomItems(arr, count) {
         const shuffled = [...arr];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -538,9 +515,8 @@
     let correctCount = 0;
     let answerLock = false;
 
-    // DOM элементы
-    const theoryCountSpan = document.getElementById('theory-count');
-    const practiceCountSpan = document.getElementById('practice-count');
+    // DOM
+    const totalCountSpan = document.getElementById('total-count');
     const currentNumSpan = document.getElementById('current-num');
     const totalSpan = document.getElementById('total-questions');
     const correctCounterSpan = document.getElementById('correct-counter');
@@ -570,15 +546,12 @@
         let qCount = parseInt(totalLimitInput.value);
         if (isNaN(qCount)) qCount = 30;
         qCount = Math.min(60, Math.max(10, qCount));
-        
-        currentQuestions = getRandomItems(fullQuestionBank, qCount);
+        currentQuestions = getRandomItems(fullBank, qCount);
         userAnswers = new Array(currentQuestions.length).fill(null);
         currentIndex = 0;
         correctCount = 0;
         answerLock = false;
-        
-        theoryCountSpan.innerText = currentQuestions.length;
-        practiceCountSpan.innerText = 0; // не разделяем
+        totalCountSpan.innerText = currentQuestions.length;
         totalSpan.innerText = currentQuestions.length;
         finalResultsDiv.style.display = 'none';
         dynamicContent.style.display = 'block';
@@ -609,7 +582,7 @@
     function updateStatsUI() {
         currentNumSpan.innerText = currentIndex + 1;
         correctCounterSpan.innerText = correctCount;
-        const percent = ((correctCount) / currentQuestions.length) * 100;
+        const percent = (correctCount / currentQuestions.length) * 100;
         progressFill.style.width = `${percent}%`;
     }
 
