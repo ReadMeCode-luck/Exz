@@ -81,7 +81,7 @@
         .config-popup {
             position: relative;
         }
-        .config-toggle {
+        .config-toggle, .mode-toggle {
             background: #1e293b;
             border: 1px solid #3b4a62;
             color: #f4c542;
@@ -93,6 +93,12 @@
             align-items: center;
             gap: 6px;
             font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .mode-toggle.exam-active {
+            border-color: #f4c542;
+            color: #facc15;
+            background: #2a3547;
         }
         .config-dropdown {
             position: absolute;
@@ -389,12 +395,13 @@
         <div class="header">
             <div class="title">
                 <h1>📘 МДК 05.01 (умный билет)</h1>
-                <p>Правильный ответ удаляет вопрос • Ошибайся — учись</p>
+                <p id="mode-description">Правильный ответ удаляет вопрос • Ошибайся — учись</p>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button id="modeToggleBtn" class="mode-toggle exam-active">📚 Режим: Экзамен</button>
                 <div class="stats">
                     <div>📋 <span id="total-count">0</span></div>
-                    <div>✅ <span id="correct-counter">0</span></div>
+                    <div id="correct-stat-label">✅</div> <span id="correct-counter">0</span>
                 </div>
                 <div class="config-popup">
                     <button id="configToggleBtn" class="config-toggle">⚙️</button>
@@ -406,10 +413,10 @@
             </div>
         </div>
 
-        <div class="progress-area">
+        <div class="progress-area" id="progress-area">
             <div class="progress-text">
                 <span>📖 Вопрос <span id="current-num">1</span> / <span id="total-questions">0</span></span>
-                <span>🏆 Выучено: <span id="correct-progress">0</span></span>
+                <span id="progress-label">🏆 Выучено:</span> <span id="correct-progress">0</span>
             </div>
             <div class="bar-bg"><div class="bar-fill" id="progress-fill"></div></div>
         </div>
@@ -429,7 +436,7 @@
         </div>
         <div id="final-results" style="display: none;"></div>
     </div>
-    <footer>✨ Верный ответ → вопрос исчезает навсегда. Неверный → остаётся для повторной попытки.</footer>
+    <footer id="footer-text">✨ Верный ответ → вопрос исчезает навсегда. Неверный → остаётся для повторной попытки.</footer>
 </div>
 
 <script>
@@ -512,18 +519,21 @@
         { text: "75. В ходе анализа предметной области команда описала основные сущности, но не определила их границы ответственности. Какое последствие наиболее вероятно:", options: ["A) Логика начнёт дублироваться в разных частях системы", "B) Повысится производительность приложения", "C) Упростится проектирование базы данных", "D) Снизится количество зависимостей"], correct: 0 }
     ];
 
-    // ----- Основное состояние -----
+    // ----- Состояние приложения -----
+    let examMode = true;                // true - экзамен (удаление), false - тренировка
     let currentQuestions = [];
     let currentIndex = 0;
-    let correctCount = 0;
+    let correctCount = 0;              // в экзамене: число удалённых (выученных), в тренировке: число верных ответов
     let totalInitial = 0;
 
+    // DOM-элементы
     const totalCountSpan = document.getElementById('total-count');
     const currentNumSpan = document.getElementById('current-num');
     const totalSpan = document.getElementById('total-questions');
     const correctCounterSpan = document.getElementById('correct-counter');
     const correctProgressSpan = document.getElementById('correct-progress');
     const progressFill = document.getElementById('progress-fill');
+    const progressLabel = document.getElementById('progress-label');
     const questionTextDiv = document.getElementById('question-text');
     const optionsContainer = document.getElementById('options-container');
     const feedbackDiv = document.getElementById('feedback-area');
@@ -536,6 +546,10 @@
     const applyConfigBtn = document.getElementById('applyConfigBtn');
     const configToggleBtn = document.getElementById('configToggleBtn');
     const configDropdown = document.getElementById('configDropdown');
+    const modeToggleBtn = document.getElementById('modeToggleBtn');
+    const modeDescription = document.getElementById('mode-description');
+    const footerText = document.getElementById('footer-text');
+    const correctStatLabel = document.getElementById('correct-stat-label');
 
     function getRandomItems(arr, count) {
         const shuffled = [...arr];
@@ -546,19 +560,48 @@
         return shuffled.slice(0, count);
     }
 
+    function updateModeUI() {
+        if (examMode) {
+            modeToggleBtn.textContent = '📚 Режим: Экзамен';
+            modeToggleBtn.classList.add('exam-active');
+            modeDescription.textContent = 'Правильный ответ удаляет вопрос • Ошибайся — учись';
+            footerText.textContent = '✨ Верный ответ → вопрос исчезает навсегда. Неверный → остаётся для повторной попытки.';
+            progressLabel.textContent = '🏆 Выучено:';
+            correctStatLabel.textContent = '✅';
+        } else {
+            modeToggleBtn.textContent = '🔄 Режим: Тренировка';
+            modeToggleBtn.classList.remove('exam-active');
+            modeDescription.textContent = 'Вопросы не удаляются • Отвечай сколько угодно';
+            footerText.textContent = '📝 Вопросы остаются в списке. Правильные ответы не удаляются — учитесь в своём темпе.';
+            progressLabel.textContent = '✅ Правильно:';
+            correctStatLabel.textContent = '🎯';
+        }
+    }
+
     function updateStatsUI() {
-        correctCounterSpan.innerText = correctCount;
-        correctProgressSpan.innerText = correctCount;
         const totalCurr = currentQuestions.length;
         totalCountSpan.innerText = totalCurr;
         totalSpan.innerText = totalCurr;
+
+        correctCounterSpan.innerText = correctCount;
+        correctProgressSpan.innerText = correctCount;
+
         if (currentIndex >= 0 && totalCurr > 0) {
             currentNumSpan.innerText = currentIndex + 1;
-        } else {
+        } else if (totalCurr === 0) {
             currentNumSpan.innerText = 0;
         }
-        const percent = totalInitial > 0 ? (correctCount / totalInitial) * 100 : 0;
-        progressFill.style.width = `${percent}%`;
+
+        // Прогресс-бар: в экзамене процент выученных от начального, в тренировке скрываем или делаем 0
+        if (examMode) {
+            const percent = totalInitial > 0 ? (correctCount / totalInitial) * 100 : 0;
+            progressFill.style.width = `${percent}%`;
+            document.getElementById('progress-area').style.display = 'block';
+        } else {
+            // В тренировке прогресс-бар не информативен, можно скрыть или обнулить
+            progressFill.style.width = '0%';
+            document.getElementById('progress-area').style.display = 'block'; // оставим, но с 0%
+        }
     }
 
     function renderNavigation() {
@@ -595,21 +638,32 @@
 
     function handleCorrect() {
         correctCount++;
-        currentQuestions.splice(currentIndex, 1);
-        updateStatsUI();
-        if (currentQuestions.length === 0) {
-            finishExam();
-            return;
+        if (examMode) {
+            // Режим экзамена: удаляем вопрос
+            currentQuestions.splice(currentIndex, 1);
+            updateStatsUI();
+            if (currentQuestions.length === 0) {
+                finishExam();
+                return;
+            }
+            if (currentIndex >= currentQuestions.length) {
+                currentIndex = currentQuestions.length - 1;
+            }
+            renderCurrentQuestion();
+            renderNavigation();
+            showFeedback('✅ Верно! Вопрос удалён из билета.', false);
+            setTimeout(() => {
+                if (feedbackDiv.style.display !== 'none' && feedbackDiv.innerHTML.includes('Верно!')) clearFeedback();
+            }, 1800);
+        } else {
+            // Режим тренировки: вопрос остаётся
+            updateStatsUI();
+            showFeedback('✅ Верно! Так держать.', false);
+            setTimeout(() => {
+                if (feedbackDiv.style.display !== 'none' && feedbackDiv.innerHTML.includes('Верно!')) clearFeedback();
+            }, 1800);
+            // Не переходим автоматически, ждём нажатия "Дальше"
         }
-        if (currentIndex >= currentQuestions.length) {
-            currentIndex = currentQuestions.length - 1;
-        }
-        renderCurrentQuestion();
-        renderNavigation();
-        showFeedback('✅ Верно! Вопрос удалён из билета.', false);
-        setTimeout(() => {
-            if (feedbackDiv.style.display !== 'none' && feedbackDiv.innerHTML.includes('Верно!')) clearFeedback();
-        }, 1800);
     }
 
     function handleIncorrect(selectedIdx, correctIdx) {
@@ -622,7 +676,6 @@
         });
         setTimeout(() => {
             options.forEach(opt => opt.classList.remove('correct-feedback', 'wrong-feedback'));
-            if (feedbackDiv.style.display !== 'none' && feedbackDiv.innerHTML.includes('Неверно')) {}
         }, 2000);
     }
 
@@ -639,7 +692,11 @@
 
     function renderCurrentQuestion() {
         if (currentQuestions.length === 0) {
-            finishExam();
+            if (examMode) finishExam();
+            else {
+                // В тренировке такого быть не должно, но если список почему-то пуст, пересоздаём
+                rebuildExam();
+            }
             return;
         }
         clearFeedback();
@@ -663,12 +720,14 @@
 
     function nextQuestion() {
         if (currentQuestions.length === 0) {
-            finishExam();
+            if (examMode) finishExam();
+            else rebuildExam(); // тренировка не должна быть пустой, пересоздадим
             return;
         }
         if (currentIndex + 1 < currentQuestions.length) {
             currentIndex++;
         } else {
+            // В экзамене это конец списка, но вопросы ещё есть — идём в начало
             currentIndex = 0;
         }
         renderCurrentQuestion();
@@ -680,12 +739,17 @@
         finalResultsDiv.style.display = 'block';
         const total = totalInitial;
         const percent = total > 0 ? Math.round((correctCount / total) * 100) : 100;
-        let gradeMsg = percent >= 80 ? '🎉 Отлично! Вы освоили все вопросы!' : (percent >= 60 ? '👍 Хороший результат, повторите оставшиеся' : '📚 Стоит ещё потренироваться');
-        if (currentQuestions.length === 0) gradeMsg = '🏆 Блестяще! Все вопросы успешно сданы!';
+        let gradeMsg = '';
+        if (examMode) {
+            gradeMsg = percent >= 80 ? '🎉 Отлично! Вы освоили все вопросы!' : (percent >= 60 ? '👍 Хороший результат, повторите оставшиеся' : '📚 Стоит ещё потренироваться');
+            if (currentQuestions.length === 0) gradeMsg = '🏆 Блестяще! Все вопросы успешно сданы!';
+        } else {
+            gradeMsg = `Вы ответили правильно ${correctCount} раз(а).`;
+        }
         finalResultsDiv.innerHTML = `
             <div class="result-panel">
-                <div class="finish-stats">🏁 Экзамен завершён</div>
-                <div style="font-size:1rem; margin:10px 0;">✅ Выучено вопросов: ${correctCount} из ${total} (${percent}%)</div>
+                <div class="finish-stats">🏁 ${examMode ? 'Экзамен' : 'Тренировка'} завершена</div>
+                <div style="font-size:1rem; margin:10px 0;">✅ ${examMode ? 'Выучено' : 'Правильных ответов'}: ${correctCount} из ${total} (${percent}%)</div>
                 <div style="font-weight:500; margin-bottom:12px;">${gradeMsg}</div>
                 <button id="restartFinishBtn" class="apply-config" style="margin-top:8px;">🔄 Новый билет</button>
             </div>
@@ -705,10 +769,17 @@
         finalResultsDiv.style.display = 'none';
         dynamicContent.style.display = 'block';
         clearFeedback();
+        updateModeUI();        // обновить подписи в зависимости от режима
         renderCurrentQuestion();
         updateStatsUI();
         renderNavigation();
     }
+
+    // Переключение режима
+    modeToggleBtn.addEventListener('click', () => {
+        examMode = !examMode;
+        rebuildExam();        // полный перезапуск с новым режимом
+    });
 
     applyConfigBtn.addEventListener('click', () => {
         configDropdown.classList.remove('open');
@@ -724,6 +795,8 @@
         if (!configToggleBtn.contains(e.target) && !configDropdown.contains(e.target)) configDropdown.classList.remove('open');
     });
 
+    // Инициализация
+    updateModeUI();
     rebuildExam();
 </script>
 </body>
